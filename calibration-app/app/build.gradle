@@ -23,6 +23,12 @@ ext.readProperty = { paramName ->
 }
 
 android {
+
+	configurations.all {
+		resolutionStrategy.dependencySubstitution {
+			substitute module('org.hamcrest:hamcrest-core:1.1') with module('junit:junit:4.10')
+		}
+	}
 	compileSdkVersion 29
 	buildToolsVersion "29.0.3"
 
@@ -80,4 +86,5 @@ dependencies {
 	implementation 'com.squareup.retrofit2:converter-gson:2.8.1'
 
 	implementation 'com.google.android.material:material:1.1.0'
+	implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
 }

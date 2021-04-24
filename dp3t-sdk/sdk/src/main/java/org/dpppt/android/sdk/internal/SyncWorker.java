@@ -147,13 +147,8 @@ public class SyncWorker extends Worker {
 		DayDate lastDateToCheck = new DayDate();
 		DayDate dateToLoad = lastDateToCheck.subtractDays(9);
 
-		ArrayList<File> fileList = null;
-		for (long batchReleaseTime = nextBatchReleaseTime;
-			 batchReleaseTime < System.currentTimeMillis();
-			 batchReleaseTime += BATCH_LENGTH) {
-
-			Response<ResponseBody> result = backendBucketRepository.getExposees(batchReleaseTime);
-
+		long batchReleaseTime = nextBatchReleaseTime;
+			Response<ResponseBody> result = backendBucketRepository.getExposees();
 
 			if (result.code() != 204) {
 				File file = new File(context.getCacheDir(),
@@ -167,25 +162,12 @@ public class SyncWorker extends Worker {
 				}
 				bos.close();
 
-				fileList = new ArrayList<>();
+				ArrayList<File> fileList = new ArrayList<>();
 				fileList.add(file);
 				String token = dateToLoad.formatAsString();
-				//googleExposureClient.provideDiagnosisKeys(fileList, token);
-				//lastExposureClientCalls.put(dateToLoad, System.currentTimeMillis());
+				getFilterFromZip(fileList);
 			}
-
-			/*long batchReleaseServerTime = result.getBatchReleaseTime();
-			for (Exposed.ProtoExposeeOrBuilder exposee : result.getExposedOrBuilderList()) {
-				database.addKnownCase(
-						context,
-						exposee.getKey().toByteArray(),
-						exposee.getKeyDate(),
-						batchReleaseServerTime
-				);
-			}*/
 			appConfigManager.setLastLoadedBatchReleaseTime(batchReleaseTime);
-		}
-		getFilterFromZip(fileList);
 
 		database.removeOldData();
 
@@ -196,29 +178,24 @@ public class SyncWorker extends Worker {
 		ZipInputStream keyZipInputstream = new ZipInputStream(new FileInputStream(fileList.get(0)));
 
 		ZipEntry entry = keyZipInputstream.getNextEntry();
-		boolean foundData = false;
-		boolean foundSignature = false;
 
-		byte[] signatureProto = null;
-		byte[] exportBin = null;
-		byte[] keyProto = null;
+		byte[] signatureProto = new byte[1024];
+		byte[] exportBin = new byte[1024];
+		byte[] keyProto = new byte[1024];
 
 		while (entry != null) {
 			if (entry.getName().equals("export.bin")) {
-				foundData = true;
-				keyZipInputstream.read(exportBin, 0, Integer.MAX_VALUE);
+				keyZipInputstream.read(exportBin, 0, exportBin.length);
 				keyProto = new byte[exportBin.length - 16];
 				System.arraycopy(exportBin, 16, keyProto, 0, keyProto.length);
 			}
 			if (entry.getName().equals("export.sig")) {
-				foundSignature = true;
-				keyZipInputstream.read(signatureProto, 0, Integer.MAX_VALUE);
+				keyZipInputstream.read(signatureProto, 0, signatureProto.length);
 			}
 			entry = keyZipInputstream.getNextEntry();
 		}
 
-		//assertTrue(foundData, "export.bin not found in zip");
-		//assertTrue(foundSignature, "export.sig not found in zip");
+
 
 		//TEKSignatureList list = TEKSignatureList.parseFrom(signatureProto);
 		//TemporaryExposureKeyExport export = TemporaryExposureKeyExport.parseFrom(keyProto);

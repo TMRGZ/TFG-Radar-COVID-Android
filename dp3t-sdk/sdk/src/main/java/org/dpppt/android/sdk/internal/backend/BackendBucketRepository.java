@@ -45,7 +45,7 @@ public class BackendBucketRepository implements Repository {
 		bucketService = bucketRetrofit.create(BucketService.class);
 	}
 
-	public Response<ResponseBody> getExposees(long batchReleaseTime)
+	public Response<ResponseBody> getExposees(/*long batchReleaseTime*/)
 			throws IOException, StatusCodeException, ServerTimeOffsetException, SignatureException {
 		Response<ResponseBody> response;
 		try {
