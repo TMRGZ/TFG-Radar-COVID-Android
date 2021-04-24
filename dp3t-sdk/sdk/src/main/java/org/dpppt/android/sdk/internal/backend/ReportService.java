@@ -21,7 +21,7 @@ import retrofit2.http.POST;
 interface ReportService {
 
 	@Headers("Accept: application/json")
-	@POST("v1/exposed")
+	@POST("v1/gaen/exposed")
 	Call<Void> addExposee(@Body ExposeeRequest exposeeRequest, @Header("Authorization") String authorizationHeader);
 
 }

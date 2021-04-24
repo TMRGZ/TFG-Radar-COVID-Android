@@ -20,6 +20,7 @@ import java.security.PublicKey;
 import org.dpppt.android.calibration.util.NotificationUtil;
 import org.dpppt.android.calibration.util.PreferencesUtil;
 import org.dpppt.android.sdk.DP3T;
+import org.dpppt.android.sdk.backend.models.ApplicationInfo;
 import org.dpppt.android.sdk.internal.logger.LogLevel;
 import org.dpppt.android.sdk.internal.logger.Logger;
 import org.dpppt.android.sdk.internal.util.ProcessUtil;
@@ -44,13 +45,11 @@ public class MainApplication extends Application {
 
 	public static void initDP3T(Context context) {
 		PublicKey publicKey = SignatureUtil.getPublicKeyFromBase64OrThrow(
-				"LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0R" +
-						"RZ0FFWTc3MFZEWjJlZjZCYjh0UXZYWVJpcUFaemtHLwpwNWs0U3pTV3FRY00zNzlqTVN6c3JOaU5nc0" +
-						"hWZlRPeGFqMUFzQ3RrNmJVUDV1cDc3RU5nckVzVkh3PT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t");
-		DP3T.init(context, "org.dpppt.demo", true, publicKey);
+				"LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFNDdLU0ZqSVd4RVJVc2FQQjhLMi91bkpqaXdISAo5Vk85U2NSZm0wN3BvaURyRHlCWXZkRnBlOG9IWnh4M0FyMHVvRjhGbkNWWGlwRkQ0SG1UeC9iRjdnPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t");
+		DP3T.init(context, new ApplicationInfo("org.dpppt.demo", "http://192.168.1.65:8080", "http://192.168.1.65:8080"), publicKey);
 
 		CertificatePinner certificatePinner = new CertificatePinner.Builder()
-				.add("demo.dpppt.org", "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=")
+				.add("org.dpppt.demo", "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=")
 				.build();
 		DP3T.setCertificatePinner(certificatePinner);
 	}

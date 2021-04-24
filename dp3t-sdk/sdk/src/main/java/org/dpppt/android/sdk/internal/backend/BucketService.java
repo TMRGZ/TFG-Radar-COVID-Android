@@ -19,7 +19,7 @@ import retrofit2.http.Path;
 interface BucketService {
 
 	@Headers("Accept: application/x-protobuf")
-	@GET("v1/exposed/{batchReleaseTime}")
+	@GET("v1/gaen/exposed/{batchReleaseTime}")
 	Call<Exposed.ProtoExposedList> getExposees(@Path("batchReleaseTime") long batchReleaseTime);
 
 }
