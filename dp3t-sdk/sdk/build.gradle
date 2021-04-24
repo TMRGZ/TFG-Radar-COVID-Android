@@ -122,6 +122,9 @@ bintray {
 dependencies {
 	implementation fileTree(dir: 'libs', include: ['*.jar'])
 
+	implementation 'org.apache.commons:commons-lang3:3.6'
+	implementation 'com.duprasville.guava:guava-probably:1.0'
+
 	implementation 'androidx.core:core:1.2.0'
 	implementation 'androidx.security:security-crypto:1.0.0-rc01'
 	implementation 'androidx.work:work-runtime:2.3.4'

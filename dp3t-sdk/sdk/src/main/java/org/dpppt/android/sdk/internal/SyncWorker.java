@@ -14,12 +14,16 @@ import android.database.sqlite.SQLiteException;
 import androidx.annotation.NonNull;
 import androidx.work.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import okhttp3.ResponseBody;
 import org.dpppt.android.sdk.TracingStatus.ErrorState;
 import org.dpppt.android.sdk.backend.SignatureException;
 import org.dpppt.android.sdk.backend.models.ApplicationInfo;
@@ -30,6 +34,10 @@ import org.dpppt.android.sdk.internal.backend.SyncErrorState;
 import org.dpppt.android.sdk.internal.backend.proto.Exposed;
 import org.dpppt.android.sdk.internal.database.Database;
 import org.dpppt.android.sdk.internal.logger.Logger;
+import org.dpppt.android.sdk.internal.util.DayDate;
+import retrofit2.Response;
+import org.apache.commons.lang3.SerializationUtils;
+import com.duprasville.guava.probably.CuckooFilter;
 
 import static org.dpppt.android.sdk.internal.backend.BackendBucketRepository.BATCH_LENGTH;
 
@@ -37,6 +45,7 @@ public class SyncWorker extends Worker {
 
 	private static final String TAG = "SyncWorker";
 	private static final String WORK_TAG = "org.dpppt.android.sdk.internal.SyncWorker";
+	private static final String KEYFILE_PREFIX = "keyfile_";
 
 	private static PublicKey bucketSignaturePublicKey;
 
@@ -135,12 +144,37 @@ public class SyncWorker extends Worker {
 		BackendBucketRepository backendBucketRepository =
 				new BackendBucketRepository(context, appConfig.getBucketBaseUrl(), bucketSignaturePublicKey);
 
+		DayDate lastDateToCheck = new DayDate();
+		DayDate dateToLoad = lastDateToCheck.subtractDays(9);
+
+		ArrayList<File> fileList = null;
 		for (long batchReleaseTime = nextBatchReleaseTime;
 			 batchReleaseTime < System.currentTimeMillis();
 			 batchReleaseTime += BATCH_LENGTH) {
 
-			Exposed.ProtoExposedList result = backendBucketRepository.getExposees(batchReleaseTime);
-			long batchReleaseServerTime = result.getBatchReleaseTime();
+			Response<ResponseBody> result = backendBucketRepository.getExposees(batchReleaseTime);
+
+
+			if (result.code() != 204) {
+				File file = new File(context.getCacheDir(),
+						KEYFILE_PREFIX + dateToLoad.formatAsString() + "_" + lastLoadedBatchReleaseTime + ".zip");
+				BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
+				byte[] bytesIn = new byte[1024];
+				int read = 0;
+				InputStream bodyStream = result.body().byteStream();
+				while ((read = bodyStream.read(bytesIn)) != -1) {
+					bos.write(bytesIn, 0, read);
+				}
+				bos.close();
+
+				fileList = new ArrayList<>();
+				fileList.add(file);
+				String token = dateToLoad.formatAsString();
+				//googleExposureClient.provideDiagnosisKeys(fileList, token);
+				//lastExposureClientCalls.put(dateToLoad, System.currentTimeMillis());
+			}
+
+			/*long batchReleaseServerTime = result.getBatchReleaseTime();
 			for (Exposed.ProtoExposeeOrBuilder exposee : result.getExposedOrBuilderList()) {
 				database.addKnownCase(
 						context,
@@ -148,14 +182,59 @@ public class SyncWorker extends Worker {
 						exposee.getKeyDate(),
 						batchReleaseServerTime
 				);
-			}
-
+			}*/
 			appConfigManager.setLastLoadedBatchReleaseTime(batchReleaseTime);
 		}
+		getFilterFromZip(fileList);
 
 		database.removeOldData();
 
 		appConfigManager.setLastSyncDate(System.currentTimeMillis());
+	}
+
+	private static void	getFilterFromZip(ArrayList<File> fileList) throws IOException {
+		ZipInputStream keyZipInputstream = new ZipInputStream(new FileInputStream(fileList.get(0)));
+
+		ZipEntry entry = keyZipInputstream.getNextEntry();
+		boolean foundData = false;
+		boolean foundSignature = false;
+
+		byte[] signatureProto = null;
+		byte[] exportBin = null;
+		byte[] keyProto = null;
+
+		while (entry != null) {
+			if (entry.getName().equals("export.bin")) {
+				foundData = true;
+				keyZipInputstream.read(exportBin, 0, Integer.MAX_VALUE);
+				keyProto = new byte[exportBin.length - 16];
+				System.arraycopy(exportBin, 16, keyProto, 0, keyProto.length);
+			}
+			if (entry.getName().equals("export.sig")) {
+				foundSignature = true;
+				keyZipInputstream.read(signatureProto, 0, Integer.MAX_VALUE);
+			}
+			entry = keyZipInputstream.getNextEntry();
+		}
+
+		//assertTrue(foundData, "export.bin not found in zip");
+		//assertTrue(foundSignature, "export.sig not found in zip");
+
+		//TEKSignatureList list = TEKSignatureList.parseFrom(signatureProto);
+		//TemporaryExposureKeyExport export = TemporaryExposureKeyExport.parseFrom(keyProto);
+		CuckooFilter<byte[]> export = SerializationUtils.deserialize(keyProto);
+		System.out.println(export.size());
+
+		//var sig = list.getSignatures(0);
+		//java.security.Signature signatureVerifier =
+		//		java.security.Signature.getInstance(sig.getSignatureInfo().getSignatureAlgorithm().trim());
+		//signatureVerifier.initVerify(signer.getPublicKey());
+//
+		//signatureVerifier.update(exportBin);
+		//assertTrue(
+		//		signatureVerifier.verify(sig.getSignature().toByteArray()),
+		//		"Could not verify signature in zip file");
+		//assertEquals(expectKeyCount, export.size());
 	}
 
 }

@@ -17,6 +17,7 @@ import java.security.PublicKey;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import okhttp3.ResponseBody;
 import org.dpppt.android.sdk.backend.SignatureException;
 import org.dpppt.android.sdk.backend.SignatureVerificationInterceptor;
 import org.dpppt.android.sdk.internal.backend.proto.Exposed;
@@ -44,11 +45,11 @@ public class BackendBucketRepository implements Repository {
 		bucketService = bucketRetrofit.create(BucketService.class);
 	}
 
-	public Exposed.ProtoExposedList getExposees(long batchReleaseTime)
+	public Response<ResponseBody> getExposees(long batchReleaseTime)
 			throws IOException, StatusCodeException, ServerTimeOffsetException, SignatureException {
-		Response<Exposed.ProtoExposedList> response;
+		Response<ResponseBody> response;
 		try {
-			response = bucketService.getExposees(batchReleaseTime).execute();
+			response = bucketService.getExposees(/*batchReleaseTime*/).execute();
 		} catch (RuntimeException re) {
 			if (re.getCause() instanceof InvalidProtocolBufferException) {
 				// unwrap protobuf exception
@@ -58,7 +59,7 @@ public class BackendBucketRepository implements Repository {
 			}
 		}
 		if (response.isSuccessful() && response.body() != null) {
-			return response.body();
+			return response;
 		} else {
 			throw new StatusCodeException(response.raw());
 		}
