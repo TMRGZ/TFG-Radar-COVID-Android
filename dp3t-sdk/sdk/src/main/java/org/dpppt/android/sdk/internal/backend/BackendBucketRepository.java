@@ -45,11 +45,11 @@ public class BackendBucketRepository implements Repository {
 		bucketService = bucketRetrofit.create(BucketService.class);
 	}
 
-	public Response<ResponseBody> getExposees(/*long batchReleaseTime*/)
+	public Response<ResponseBody> getExposees()
 			throws IOException, StatusCodeException, ServerTimeOffsetException, SignatureException {
 		Response<ResponseBody> response;
 		try {
-			response = bucketService.getExposees(/*batchReleaseTime*/).execute();
+			response = bucketService.getExposees().execute();
 		} catch (RuntimeException re) {
 			if (re.getCause() instanceof InvalidProtocolBufferException) {
 				// unwrap protobuf exception

@@ -147,6 +147,7 @@ public class SyncWorker extends Worker {
 		DayDate lastDateToCheck = new DayDate();
 		DayDate dateToLoad = lastDateToCheck.subtractDays(9);
 
+		CuckooFilter<byte[]> casesFilter;
 		long batchReleaseTime = nextBatchReleaseTime;
 			Response<ResponseBody> result = backendBucketRepository.getExposees();
 
@@ -165,16 +166,17 @@ public class SyncWorker extends Worker {
 				ArrayList<File> fileList = new ArrayList<>();
 				fileList.add(file);
 				String token = dateToLoad.formatAsString();
-				getFilterFromZip(fileList);
+				casesFilter = getFilterFromZip(fileList);
+                appConfigManager.setLastLoadedBatchReleaseTime(batchReleaseTime);
+                database.addKnownCaseFilter(context, SerializationUtils.serialize(casesFilter), lastLoadedBatchReleaseTime, batchReleaseTime);
+                database.removeOldData();
 			}
-			appConfigManager.setLastLoadedBatchReleaseTime(batchReleaseTime);
 
-		database.removeOldData();
 
 		appConfigManager.setLastSyncDate(System.currentTimeMillis());
 	}
 
-	private static void	getFilterFromZip(ArrayList<File> fileList) throws IOException {
+	private static CuckooFilter<byte[]>	getFilterFromZip(ArrayList<File> fileList) throws IOException {
 		ZipInputStream keyZipInputstream = new ZipInputStream(new FileInputStream(fileList.get(0)));
 
 		ZipEntry entry = keyZipInputstream.getNextEntry();
@@ -200,7 +202,7 @@ public class SyncWorker extends Worker {
 		//TEKSignatureList list = TEKSignatureList.parseFrom(signatureProto);
 		//TemporaryExposureKeyExport export = TemporaryExposureKeyExport.parseFrom(keyProto);
 		CuckooFilter<byte[]> export = SerializationUtils.deserialize(keyProto);
-		System.out.println(export.size());
+		return export;
 
 		//var sig = list.getSignatures(0);
 		//java.security.Signature signatureVerifier =

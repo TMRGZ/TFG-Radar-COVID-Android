@@ -45,6 +45,68 @@ public class Database {
 		databaseThread = DatabaseThread.getInstance(context);
 	}
 
+	public void addKnownCaseFilter(Context context, @NonNull byte[] casesFilter, long lastLoadedBatchReleaseTime, long batchReleaseTime) {
+		long onsetDate = lastLoadedBatchReleaseTime; long bucketTime = batchReleaseTime;
+
+		SQLiteDatabase db = databaseOpenHelper.getWritableDatabase();
+		ContentValues values = new ContentValues();
+		values.put(KnownCasesFilter.CASES_FILTER, casesFilter);
+
+		databaseThread.post(() -> {
+			long idOfAddedCase = db.insertWithOnConflict(KnownCasesFilter.TABLE_NAME, null, values, CONFLICT_IGNORE);
+			if (idOfAddedCase == -1) {
+				//casesFilter was already in the database, so we can ignore it
+				return;
+			}
+
+			CryptoModule cryptoModule = CryptoModule.getInstance(context);
+			cryptoModule.checkContactsFilter(casesFilter, onsetDate, bucketTime,this::getContacts, (contact) -> {
+				ContentValues updateValues = new ContentValues();
+				updateValues.put(Contacts.ASSOCIATED_KNOWN_CASE, idOfAddedCase);
+				db.update(Contacts.TABLE_NAME, updateValues, Contacts.ID + "=" + contact.getId(), null);
+			});
+
+			//compute exposure days
+			List<Contact> allMatchedContacts = getAllMatchedContacts();
+			HashMap<DayDate, List<Contact>> groupedByDay = new HashMap<>();
+			for (Contact contact : allMatchedContacts) {
+				DayDate date = new DayDate(contact.getDate());
+				if (!groupedByDay.containsKey(date)) {
+					groupedByDay.put(date, new ArrayList<>());
+				}
+				groupedByDay.get(date).add(contact);
+			}
+
+			AppConfigManager appConfigManager = AppConfigManager.getInstance(context);
+			DayDate maxAgeForExposureDay = new DayDate().subtractDays(CryptoModule.NUMBER_OF_DAYS_TO_KEEP_EXPOSED_DAYS);
+			boolean newExposureDaysAdded = false;
+			for (Map.Entry<DayDate, List<Contact>> dayEntry : groupedByDay.entrySet()) {
+				if (dayEntry.getKey().isBefore(maxAgeForExposureDay)) {
+					continue;
+				}
+				int exposureSumForDay = 0;
+				for (Contact contact : dayEntry.getValue()) {
+					exposureSumForDay += contact.getWindowCount();
+				}
+				if (exposureSumForDay >= appConfigManager.getNumberOfWindowsForExposure()) {
+					ContentValues exposureDayValues = new ContentValues();
+					exposureDayValues.put(ExposureDays.REPORT_DATE, System.currentTimeMillis());
+					exposureDayValues.put(ExposureDays.EXPOSED_DATE, dayEntry.getKey().getStartOfDayTimestamp());
+					long id = db.insertWithOnConflict(ExposureDays.TABLE_NAME, null, exposureDayValues, CONFLICT_IGNORE);
+					if (id != -1) {
+						newExposureDaysAdded = true;
+					}
+				}
+			}
+
+			if (newExposureDaysAdded) {
+				BroadcastHelper.sendUpdateBroadcast(context);
+			}
+		});
+	}
+
+
+
 	public void addKnownCase(Context context, @NonNull byte[] key, long onsetDate, long bucketTime) {
 		SQLiteDatabase db = databaseOpenHelper.getWritableDatabase();
 		ContentValues values = new ContentValues();

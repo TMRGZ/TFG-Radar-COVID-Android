@@ -227,6 +227,32 @@ public class CryptoModule {
 		}
 	}
 
+	public void checkContactsFilter(byte[] filter, long onsetDate, long bucketTime, GetContactsCallback contactCallback,
+							  MatchCallback matchCallback) {
+		DayDate dayToTest = new DayDate(onsetDate);
+		byte[] skForDay = filter;
+		while (dayToTest.isBeforeOrEquals(bucketTime)) {
+			long contactTimeFrom = dayToTest.getStartOfDayTimestamp();
+			long contactTimeUntil = Math.min(dayToTest.getNextDay().getStartOfDayTimestamp(), bucketTime);
+			List<Contact> contactsOnDay = contactCallback.getContacts(contactTimeFrom, contactTimeUntil);
+			if (contactsOnDay.size() > 0) {
+				//generate all ephIds for day
+				HashSet<EphId> ephIdHashSet = new HashSet<>(createEphIds(skForDay, false));
+
+				//check all contacts if they match any of the ephIds
+				for (Contact contact : contactsOnDay) {
+					if (ephIdHashSet.contains(contact.getEphId())) {
+						matchCallback.contactMatched(contact);
+					}
+				}
+			}
+
+			//update day to next day and rotate filter accordingly
+			dayToTest = dayToTest.getNextDay();
+			skForDay = getSKt1(skForDay);
+		}
+	}
+
 	public ExposeeRequest getSecretKeyForPublishing(DayDate date, ExposeeAuthMethod exposeeAuthMethod) {
 		SKList skList = getSKList();
 		ExposeeAuthMethodJson jsonAuth =
