@@ -51,6 +51,8 @@ public class Database {
 		SQLiteDatabase db = databaseOpenHelper.getWritableDatabase();
 		ContentValues values = new ContentValues();
 		values.put(KnownCasesFilter.CASES_FILTER, casesFilter);
+		values.put(KnownCasesFilter.ONSET, onsetDate);
+		values.put(KnownCasesFilter.BUCKET_TIME, bucketTime);
 
 		databaseThread.post(() -> {
 			long idOfAddedCase = db.insertWithOnConflict(KnownCasesFilter.TABLE_NAME, null, values, CONFLICT_IGNORE);
@@ -58,7 +60,7 @@ public class Database {
 				//casesFilter was already in the database, so we can ignore it
 				return;
 			}
-
+			// Asociate Contact with filter
 			CryptoModule cryptoModule = CryptoModule.getInstance(context);
 			cryptoModule.checkContactsFilter(casesFilter, onsetDate, bucketTime,this::getContacts, (contact) -> {
 				ContentValues updateValues = new ContentValues();
@@ -67,7 +69,10 @@ public class Database {
 			});
 
 			//compute exposure days
-			List<Contact> allMatchedContacts = getAllMatchedContacts();
+			List<Contact> allMatchedContacts = getAllMatchedContacts(); // Contacts in filter
+
+
+
 			HashMap<DayDate, List<Contact>> groupedByDay = new HashMap<>();
 			for (Contact contact : allMatchedContacts) {
 				DayDate date = new DayDate(contact.getDate());
@@ -167,11 +172,26 @@ public class Database {
 	}
 
 
-	public void removeOldData() {
+	/*public void removeOldData() {
 		databaseThread.post(() -> {
 			SQLiteDatabase db = databaseOpenHelper.getWritableDatabase();
 			DayDate lastDayToKeep = new DayDate().subtractDays(CryptoModule.NUMBER_OF_DAYS_TO_KEEP_DATA);
 			db.delete(KnownCases.TABLE_NAME, KnownCases.BUCKET_TIME + " < ?",
+					new String[] { Long.toString(lastDayToKeep.getStartOfDayTimestamp()) });
+			db.delete(Contacts.TABLE_NAME, Contacts.DATE + " < ?",
+					new String[] { Long.toString(lastDayToKeep.getStartOfDayTimestamp()) });
+			DayDate lastDayToKeepMatchedContacts =
+					new DayDate().subtractDays(CryptoModule.NUMBER_OF_DAYS_TO_KEEP_EXPOSED_DAYS);
+			db.delete(ExposureDays.TABLE_NAME, ExposureDays.REPORT_DATE + " < ?",
+					new String[] { Long.toString(lastDayToKeepMatchedContacts.getStartOfDayTimestamp()) });
+		});
+	}*/
+
+	public void removeOldData() {
+		databaseThread.post(() -> {
+			SQLiteDatabase db = databaseOpenHelper.getWritableDatabase();
+			DayDate lastDayToKeep = new DayDate().subtractDays(CryptoModule.NUMBER_OF_DAYS_TO_KEEP_DATA);
+			db.delete(KnownCasesFilter.TABLE_NAME, KnownCasesFilter.BUCKET_TIME + " < ?",
 					new String[] { Long.toString(lastDayToKeep.getStartOfDayTimestamp()) });
 			db.delete(Contacts.TABLE_NAME, Contacts.DATE + " < ?",
 					new String[] { Long.toString(lastDayToKeep.getStartOfDayTimestamp()) });

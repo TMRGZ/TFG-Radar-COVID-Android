@@ -16,7 +16,7 @@ interface KnownCasesFilter {
 	String ID = "id";
 	String ONSET = "onset";
 	String BUCKET_TIME = "batchTimestamp";
-	String CASES_FILTER = "key";
+	String CASES_FILTER = "filter";
 
 	String[] PROJECTION = {
 			ID,
@@ -24,9 +24,9 @@ interface KnownCasesFilter {
 	};
 
 	static String create() {
-		return "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" + ID + " INTEGER PRIMARY KEY NOT NULL, "
-				+ CASES_FILTER + " BLOB NOT NULL, "
-				+ "CONSTRAINT no_duplicates UNIQUE (" + CASES_FILTER + ") )";
+		return "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" + ID + " INTEGER PRIMARY KEY NOT NULL, " + ONSET +
+				" INTEGER NOT NULL," + BUCKET_TIME + " INTEGER NOT NULL, " + CASES_FILTER + " BLOB NOT NULL, "
+				+ "CONSTRAINT no_duplicates UNIQUE (" + BUCKET_TIME + ", " + CASES_FILTER + ") )";
 	}
 
 	static String drop() {

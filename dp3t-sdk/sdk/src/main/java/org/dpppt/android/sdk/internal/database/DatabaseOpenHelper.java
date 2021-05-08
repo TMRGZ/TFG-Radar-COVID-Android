@@ -56,9 +56,11 @@ class DatabaseOpenHelper extends SQLiteOpenHelper {
 		new Transaction(db,
 				Contacts.drop(),
 				KnownCases.drop(),
+				KnownCasesFilter.drop(),
 				Handshakes.drop(),
 				ExposureDays.drop(),
 				KnownCases.create(),
+				KnownCasesFilter.create(),
 				Handshakes.create(),
 				Contacts.create(),
 				ExposureDays.create()

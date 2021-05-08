@@ -30,6 +30,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.duprasville.guava.probably.CuckooFilter;
+import org.apache.commons.lang3.SerializationUtils;
 import org.dpppt.android.sdk.backend.models.ExposeeAuthMethod;
 import org.dpppt.android.sdk.backend.models.ExposeeAuthMethodJson;
 import org.dpppt.android.sdk.internal.backend.models.ExposeeRequest;
@@ -239,9 +241,11 @@ public class CryptoModule {
 				//generate all ephIds for day
 				HashSet<EphId> ephIdHashSet = new HashSet<>(createEphIds(skForDay, false));
 
-				//check all contacts if they match any of the ephIds
+				CuckooFilter<byte[]> cuckooFilter = SerializationUtils.deserialize(filter);
+
+				//check all contacts if thay are contained in the filter
 				for (Contact contact : contactsOnDay) {
-					if (ephIdHashSet.contains(contact.getEphId())) {
+					if (cuckooFilter.contains(contact.getEphId().getData())) {
 						matchCallback.contactMatched(contact);
 					}
 				}
