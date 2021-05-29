@@ -18,10 +18,7 @@ import androidx.security.crypto.MasterKeys;
 
 import java.io.IOException;
 import java.security.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.Mac;
@@ -35,6 +32,7 @@ import org.apache.commons.lang3.SerializationUtils;
 import org.dpppt.android.sdk.backend.models.ExposeeAuthMethod;
 import org.dpppt.android.sdk.backend.models.ExposeeAuthMethodJson;
 import org.dpppt.android.sdk.internal.backend.models.ExposeeRequest;
+import org.dpppt.android.sdk.internal.backend.models.GaenKey;
 import org.dpppt.android.sdk.internal.database.models.Contact;
 import org.dpppt.android.sdk.internal.util.DayDate;
 import org.dpppt.android.sdk.internal.util.Json;
@@ -233,29 +231,37 @@ public class CryptoModule {
 							  MatchCallback matchCallback) {
 		DayDate dayToTest = new DayDate(onsetDate);
 		byte[] skForDay = filter;
-		while (dayToTest.isBeforeOrEquals(bucketTime)) {
+		//while (dayToTest.isBeforeOrEquals(bucketTime)) {
 			long contactTimeFrom = dayToTest.getStartOfDayTimestamp();
 			long contactTimeUntil = Math.min(dayToTest.getNextDay().getStartOfDayTimestamp(), bucketTime);
 			List<Contact> contactsOnDay = contactCallback.getContacts(contactTimeFrom, contactTimeUntil);
-			if (contactsOnDay.size() > 0) {
+			//if (contactsOnDay.size() > 0) {
 				//generate all ephIds for day
 				HashSet<EphId> ephIdHashSet = new HashSet<>(createEphIds(skForDay, false));
 
 				CuckooFilter<byte[]> cuckooFilter = SerializationUtils.deserialize(filter);
 
+				byte[] bytes = {10, 16, 116, 101, 115, 116, 75, 101, 121, 51, 50, 66, 121, 116, 101, 115, 48, 48, 24, -128, -6, -92, 1, 32, 85, 48, 0};
+
 				//check all contacts if thay are contained in the filter
-				for (Contact contact : contactsOnDay) {
-					if (cuckooFilter.contains(contact.getEphId().getData())) {
-						matchCallback.contactMatched(contact);
+				//for (Contact contact : contactsOnDay) {
+					//if (cuckooFilter.contains(contact.getEphId().getData())) {
+					if (cuckooFilter.contains(bytes)){
+						//matchCallback.contactMatched(contact);
+						matchCallback.contactMatched(new Contact(1, new Date().getTime(), new EphId(new byte[0]), 1,1));
+
+						System.out.println("CONTACTO ENCONTRADO EN EL FILTRO");
 					}
-				}
-			}
+
+					//}
+				//}
+			//}
 
 			//update day to next day and rotate filter accordingly
 			dayToTest = dayToTest.getNextDay();
 			skForDay = getSKt1(skForDay);
 		}
-	}
+
 
 	public ExposeeRequest getSecretKeyForPublishing(DayDate date, ExposeeAuthMethod exposeeAuthMethod) {
 		SKList skList = getSKList();

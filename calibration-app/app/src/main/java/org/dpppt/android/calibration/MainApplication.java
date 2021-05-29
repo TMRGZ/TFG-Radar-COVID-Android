@@ -46,7 +46,7 @@ public class MainApplication extends Application {
 	public static void initDP3T(Context context) {
 		PublicKey publicKey = SignatureUtil.getPublicKeyFromBase64OrThrow(
 				"LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFNDdLU0ZqSVd4RVJVc2FQQjhLMi91bkpqaXdISAo5Vk85U2NSZm0wN3BvaURyRHlCWXZkRnBlOG9IWnh4M0FyMHVvRjhGbkNWWGlwRkQ0SG1UeC9iRjdnPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t");
-		DP3T.init(context, new ApplicationInfo("org.dpppt.demo", "http://192.168.1.65:8080", "http://192.168.1.65:8080"), publicKey);
+		DP3T.init(context, new ApplicationInfo("org.dpppt.demo", "http://192.168.1.44:8080", "http://192.168.1.44:8080"), publicKey);
 
 		CertificatePinner certificatePinner = new CertificatePinner.Builder()
 				.add("org.dpppt.demo", "sha256/YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=")

@@ -128,6 +128,9 @@ dependencies {
 	implementation 'androidx.core:core:1.2.0'
 	implementation 'androidx.security:security-crypto:1.0.0-rc01'
 	implementation 'androidx.work:work-runtime:2.3.4'
+	// https://mvnrepository.com/artifact/javax.validation/validation-api
+	implementation group: 'javax.validation', name: 'validation-api', version: '2.0.1.Final'
+
 
 	implementation 'com.squareup.retrofit2:retrofit:2.8.1'
 	implementation 'com.squareup.retrofit2:converter-gson:2.8.1'
@@ -142,10 +145,13 @@ dependencies {
 		exclude group: 'org.json', module: 'json'
 	}
 	implementation 'org.bouncycastle:bcprov-jdk15on:1.65'
+	implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
 
 	testImplementation 'junit:junit:4.12'
 
 	androidTestImplementation 'androidx.benchmark:benchmark-junit4:1.0.0'
 	androidTestImplementation 'androidx.test.ext:junit:1.1.1'
 	androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+	androidTestImplementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
+
 }
